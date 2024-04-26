@@ -17,14 +17,14 @@ class LiveMap extends StatefulWidget {
 }
 
 class _LiveMapState extends State<LiveMap> {
-  LatLng _currentLocation = LatLng(9.8509, 76.9400);
+  LatLng _currentLocation = LatLng(0, 0);
   MapController _mapController = MapController();
 
   void _updateLocation(double latitude, double longitude) {
     setState(() {
       _currentLocation = LatLng(latitude, longitude);
     });
-    _mapController.move(_currentLocation, 15.0);
+    _mapController.move(_currentLocation, 15.0,offset: Offset(10, 10));
     print('Location updated - Latitude: $latitude, Longitude: $longitude');
   }
 
@@ -55,7 +55,7 @@ class _LiveMapState extends State<LiveMap> {
   void initState() {
     super.initState();
     _fetchLocation();
-    Timer.periodic(Duration(seconds: 10), (timer) {
+    Timer.periodic(Duration(seconds: 5), (timer) {
       _fetchLocation();
     });
   }
@@ -140,11 +140,21 @@ class _LiveMapState extends State<LiveMap> {
       options: MapOptions(
         initialCenter: _currentLocation,
         initialZoom: 15.0,
+        keepAlive: true,
+        interactionOptions: InteractionOptions(
+          enableMultiFingerGestureRace: true,
+          enableScrollWheel: true,
+          pinchZoomThreshold: 15.0,
+          rotationThreshold: 20.0
+          
+        ),
+         
       ),
       children: [
         //openStreetMapTileLayer,
         TileLayer(
           urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          // urlTemplate: "http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga.png",
           subdomains: ['a', 'b', 'c'],
         ),
         MarkerLayer(

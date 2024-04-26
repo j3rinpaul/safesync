@@ -32,9 +32,6 @@ dependencies:
   cupertino_icons: ^1.0.2
   flutter:
     sdk: flutter
-  mobile_scanner: ^4.0.1
-  qr_code_scanner: ^1.0.1
-  qr_flutter: ^4.1.0
   shared_preferences: ^2.2.2
   flutter_map: ^6.1.0
   latlong2: ^0.9.1
@@ -42,6 +39,7 @@ dependencies:
   fl_chart: ^0.67.0
   percent_indicator: ^4.2.3
   syncfusion_flutter_charts: ^25.1.40
+  graphic: ^2.2.1
 
 dev_dependencies:
   flutter_lints: ^2.0.0

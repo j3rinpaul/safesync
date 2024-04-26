@@ -1,245 +1,221 @@
-import 'dart:math';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
-import 'package:safe/phonenumbers.dart';
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  late List<FlSpot> flspots;
-  late LineChartData data;
+  final String url = "http://127.0.0.1:8000";
+  final List<Map<String, dynamic>> phoneNum = [];
 
-  @override
-  void initState() {
-    super.initState();
-    flspots = [FlSpot(6, 0)];
-    data = LineChartData();
-    startCreatingDemoData();
-    setChartData();
-  }
+  Future<void> fetchPhone() async {
+    try {
+      final response = await http.get(Uri.parse('$url/phone_number'));
 
-  void startCreatingDemoData() async {
-    for (int i = 6; i < 13; i++) {
-      if (i == 6) continue;
-      await Future.delayed((Duration(seconds: 1))).then((value) {
-        Random random = Random();
-        flspots.add(FlSpot(
-          double.parse(i.toString()),
-          random.nextDouble(),
-        ));
-        setState(() {
-          setChartData();
-        });
-      });
+      if (response.statusCode == 200) {
+        final List<dynamic> dataList = json.decode(response.body);
+
+        // Clear phoneNumList before adding new data
+        phoneNum.clear();
+
+        // Iterate over the list of objects and add each object to phoneNumList
+        for (var data in dataList) {
+          if (data is Map<String, dynamic>) {
+            phoneNum.add(data);
+          }
+        }
+      } else {
+        throw Exception('Failed to fetch phone: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Handle any exceptions that occur during the HTTP request
+      print('Error fetching phone: $e');
+      // Optionally, you can rethrow the exception if you want to propagate it
+      // throw e;
     }
   }
 
-  void setChartData() {
-    data = LineChartData(
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
-        getDrawingHorizontalLine: (value) {
-          return const FlLine(
-            color: Colors.black,
-            strokeWidth: 1,
-          );
-        },
-        getDrawingVerticalLine: (value) {
-          return const FlLine(
-            color: Colors.black,
-            strokeWidth: 1,
-          );
-        },
-      ),
-      titlesData: FlTitlesData(
-        show: true,
-        topTitles: AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: AxisTitles(
-          axisNameWidget: Center(child: Text('Time')),
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 35,
-            interval: 1,
-          ),
-        ),
-        leftTitles: AxisTitles(
-          axisNameWidget: Center(child: Text('Average speed')),
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-          ),
-        ),
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: Colors.black, width: 1),
-      ),
-      minX: 6,
-      maxX: 12,
-      minY: 0,
-      maxY: 15,
-      lineBarsData: [
-        LineChartBarData(
-          spots: flspots,
-          isCurved: true,
-          color: gradientColors.first,
-          barWidth: 4,
-          isStrokeCapRound: true,
-          dotData: FlDotData(
-            show: false,
-          ),
-          belowBarData: BarAreaData(
-            show: true,
-            color: gradientColors
-                .map((color) => color.withOpacity(0.3))
-                .first,
-          ),
-        ),
-      ],
-    );
+  Future<void> removeNum(String phone) async {
+    try {
+      final response = await http.delete(Uri.parse('$url/phone_number/$phone'));
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        print("successfully deleted phone number");
+        setState(() {
+          phoneNum.remove(phone);
+        });
+      } else {
+        throw Exception('Failed to fetch phone: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Handle any exceptions that occur during the HTTP request
+      print('Error fetching phone: $e');
+      // Optionally, you can rethrow the exception if you want to propagate it
+      // throw e;
+    }
   }
-
-  List<Color> gradientColors = [
-    const Color(0xff23b6e6),
-    const Color(0xff02d39a)
-  ];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.purple,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                width: MediaQuery.of(context).size.width * 0.7,
-                //height:MediaQuery.of(context).size.width * 0.2 ,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Center(
-                      child: Text(
-                        'Name: John Doe',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w200,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Text(
-                        'Age: 30',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w200,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(
-              height: 8,
-            ),
-           DataListWidget(),
-            SizedBox(
-              height: 25,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  void initState() {
+    // TODO: implement initState
+
+    super.initState();
+    fetchPhone();
+  }
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Profile'),
+    ),
+    body: Container(
+      child: FutureBuilder(
+        future: fetchPhone(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                CircularPercentIndicator(
-                  radius: 40.0,
-                  lineWidth: 15.0,
-                  animation: true,
-                  percent: 0.7,
-                  center: Text(
-                    "70.0%",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                  footer: const Text(
-                    "Average Speed\n of the Month",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w200,
-                      fontSize: 17.0,
-                    ),
-                  ),
-                  circularStrokeCap: CircularStrokeCap.round,
-                  progressColor: Colors.purple,
+                SizedBox(
+                  height: 100, // Adjust the height of the SizedBox as needed
+                  child: phoneNum.isEmpty
+                      ? Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  addPhone();
+                                },
+                                icon: Icon(Icons.add),
+                              ),
+                              Text("Add phone number"),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: phoneNum.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(phoneNum[index].values.elementAt(1)),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(phoneNum[index]
+                                      .values
+                                      .elementAt(0)
+                                      .toString()),
+                                  IconButton(
+                                    icon: Icon(Icons.delete),
+                                    onPressed: () {
+                                      removeNum(
+                                          phoneNum[index].values.elementAt(0));
+                                      setState(() {
+                                        phoneNum.remove(
+                                            phoneNum[index].keys.elementAt(0));
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                 ),
-                 CircularPercentIndicator(
-                  radius: 40.0,
-                  lineWidth: 15.0,
-                  animation: true,
-                  percent: 0.7,
-                  center: Text(
-                    "70.0%",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                  footer: const Text(
-                    "Average Driving Behaviour\n of the Month",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w200,
-                      fontSize: 17.0,
-                    ),
-                  ),
-                  circularStrokeCap: CircularStrokeCap.round,
-                  progressColor: Colors.purple,
-                ),
+                // Additional widgets can be added below the ListView.builder
+                // For example:
+               SizedBox(
+                height: 20,
+               ),
+               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    
+                  )
+                ],
+               )
               ],
             ),
-            Container(
-              margin: const EdgeInsets.all(45),
-              padding: const EdgeInsets.all(25),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              width: MediaQuery.of(context).size.width * 0.8,
-              height: MediaQuery.of(context).size.height * 0.4,
-              child: LineChart(data),
+          );
+        },
+      ),
+    ),
+  );
+}
+
+
+void addPhone() {
+  TextEditingController phoneNumController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Add phone number"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(hintText: "Name"),
             ),
-            
+            TextField(
+              controller: phoneNumController,
+              decoration: InputDecoration(hintText: "Phone number"),
+            ),
           ],
         ),
-      ),
-    );
-  }
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final response = await http.post(
+                  Uri.parse('$url/phone'),
+                  headers: {
+                    "Content-Type": "application/json",
+                    "accept": "application/json",
+                  },
+                  body: json.encode({
+                    "name": nameController.text,
+                    "phoneNumber": phoneNumController.text,
+                  }),
+                );
+
+                if (response.statusCode == 200) {
+                  // Add the new phone number to the list
+                  setState(() {
+                    phoneNum.add({
+                      "name": nameController.text,
+                      "phone": phoneNumController.text,
+                    });
+                  });
+                  // Close the dialog
+                  Navigator.of(context).pop();
+                } else {
+                  throw Exception('Failed to add phone: ${response.statusCode}');
+                }
+              } catch (e) {
+                print('Error adding phone: $e');
+              }
+            },
+            child: Text("Add"),
+          ),
+        ],
+      );
+    },
+  );
+}
 }
