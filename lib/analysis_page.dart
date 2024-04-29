@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:safe/chart.dart';
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
@@ -15,7 +16,7 @@ class AnalysisPage extends StatefulWidget {
 class _AnalysisPageState extends State<AnalysisPage> {
   int _rashPercent = 0;
   int _avgSpeed = 0;
-  final String url = "http://127.0.0.1:8000";
+  final String url = "https://accident-backend-qjlv.onrender.com";
   final Map<String, dynamic> rashData = {};
 
   Future<void> fetchSpeed() async {
@@ -203,7 +204,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
               ),
             ),
             SizedBox(
-              height: 20,)
+              height: 20,),
+
+              //chart here
+              // Charts(needData: {"27/04":"rash"},)
 
               
           ],

@@ -1,6 +1,7 @@
 // import 'dart:ffi';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 //import 'package:flutter/widgets.dart';
 import 'package:latlong2/latlong.dart';
@@ -19,18 +20,45 @@ class LiveMap extends StatefulWidget {
 class _LiveMapState extends State<LiveMap> {
   LatLng _currentLocation = LatLng(0, 0);
   MapController _mapController = MapController();
+  int initspeed = 0;
 
   void _updateLocation(double latitude, double longitude) {
     setState(() {
       _currentLocation = LatLng(latitude, longitude);
     });
-    _mapController.move(_currentLocation, 15.0,offset: Offset(10, 10));
+    _mapController.move(_currentLocation, 15.0, offset: Offset(10, 10));
     print('Location updated - Latitude: $latitude, Longitude: $longitude');
   }
+Future<void> fetchSpeed() async {
+  try {
+    final response = await http.get(
+        Uri.parse('https://accident-backend-qjlv.onrender.com/getspeed'));
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final speedString = data['speed']; // Get the speed value as a string
+      final speed = double.parse(speedString); // Convert the string to double
+      _updateSpeed(speed);
+    } else {
+      throw Exception('Failed to speed: ${response.statusCode}');
+    }
+  } catch (e) {
+    // Handle any exceptions that occur during the HTTP request
+    print('Error fetching speed: $e');
+    // Optionally, you can rethrow the exception if you want to propagate it
+    // throw e;
+  }
+}
 
+  void _updateSpeed(double speed) {
+    setState(() {
+      initspeed = speed.round();
+    });
 
+    print('Speed Updated - $initspeed');
+  }
 
- Future <void> _fetchLocation() async {
+  Future<void> _fetchLocation() async {
     try {
       final response = await http.get(Uri.parse(
           'https://accident-backend-qjlv.onrender.com/last_location'));
@@ -39,7 +67,7 @@ class _LiveMapState extends State<LiveMap> {
         final data = json.decode(response.body);
         final latitude = data['latitude'];
         final longitude = data['longitude'];
-        _updateLocation(double.parse(latitude),double.parse(longitude));
+        _updateLocation(double.parse(latitude), double.parse(longitude));
       } else {
         throw Exception('Failed to fetch location: ${response.statusCode}');
       }
@@ -55,8 +83,12 @@ class _LiveMapState extends State<LiveMap> {
   void initState() {
     super.initState();
     _fetchLocation();
+    fetchSpeed();
     Timer.periodic(Duration(seconds: 5), (timer) {
       _fetchLocation();
+    });
+    Timer.periodic(Duration(seconds: 2), (timer) {
+      fetchSpeed();
     });
   }
 
@@ -76,7 +108,27 @@ class _LiveMapState extends State<LiveMap> {
         ),
         body: Column(
           children: [
-            Expanded(child: content()),
+            Expanded(
+              child: Stack(children: [content(),
+                    Positioned(
+                        bottom: 16.0, // Adjust position as needed
+                        right: 16.0,
+                        child: Container(
+              padding: EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Text(
+                'Speed: $initspeed', // Display the speed value here
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+                        ),
+                      ),
+              ]),
+            ),
             Container(
               height: 120,
               // width: 120,
@@ -142,13 +194,10 @@ class _LiveMapState extends State<LiveMap> {
         initialZoom: 15.0,
         keepAlive: true,
         interactionOptions: InteractionOptions(
-          enableMultiFingerGestureRace: true,
-          enableScrollWheel: true,
-          pinchZoomThreshold: 15.0,
-          rotationThreshold: 20.0
-          
-        ),
-         
+            enableMultiFingerGestureRace: true,
+            enableScrollWheel: true,
+            pinchZoomThreshold: 15.0,
+            rotationThreshold: 20.0),
       ),
       children: [
         //openStreetMapTileLayer,
